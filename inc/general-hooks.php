@@ -46,7 +46,13 @@ if( ! function_exists( 'wp_ulike_shortcode' ) ){
 
 	    switch ( $args['for'] ) {
 	    	case 'comment':
-	    		$result = $content . wp_ulike_comments( 'put', array_filter( $args ) );
+	    		$result = $content;
+				$result .= '<div class="wpulike-row">';
+				$result .= wp_ulike_comments('put', array('for' => $args['for'], 'method' => 'dislikeThisComment', 'key' => '_commentdisliked', 'cookie' => 'comment-disliked-', 'wrapper_class' => 'wpulike-dislike wpulike-first'));
+				$result .= wp_ulike_comments('put', array('for' => $args['for'], 'method' => 'likeThisComment', 'key' => '_commentliked', 'cookie' => 'comment-liked-', 'wrapper_class' => 'wpulike-default wpulike-last'));
+				$result .= '</div>';
+
+	    		//$result = $content . wp_ulike_comments( 'put', array_filter( $args ) );
 	    		break;
 
 	    	case 'activity':
@@ -58,7 +64,12 @@ if( ! function_exists( 'wp_ulike_shortcode' ) ){
 	    		break;
 
 	    	default:
-	    		$result = $content . wp_ulike( 'put', array_filter( $args ) );
+	    		$result = $content;
+		    	$result .= '<div class="wpulike-row">';
+				$result .= wp_ulike('put', array('for' => $args['for'], 'method' => 'dislikeThis', 'key' => '_disliked', 'cookie' => 'disliked-', 'wrapper_class' => 'wpulike-dislike wpulike-first'));
+				$result .= wp_ulike('put', array('for' => $args['for'], 'method' => 'likeThis', 'key' => '_liked', 'cookie' => 'liked-', 'wrapper_class' => 'wpulike-default wpulike-last'));
+				$result .= '</div>';
+	    		//$result = $content . wp_ulike( 'put', array_filter( $args ) );
 	    }
 
 		return $result;
@@ -154,7 +165,10 @@ if( ! function_exists( 'wp_ulike_put_posts' ) ){
 
 		//add wp_ulike function
 		if(	!is_feed() && is_wp_ulike( wp_ulike_get_setting( 'wp_ulike_posts', 'auto_display_filter') ) ){
-			$button = wp_ulike('put');
+			$button .= '<div class="wpulike-row">';
+			$button .= wp_ulike('put', array('method' => 'dislikeThis', 'key' => '_disliked', 'cookie' => 'disliked-', 'wrapper_class' => 'wpulike-dislike wpulike-first'));
+			$button .= wp_ulike('put', array('method' => 'likeThis', 'key' => '_liked', 'cookie' => 'liked-', 'wrapper_class' => 'wpulike-default wpulike-last'));
+			$button .= '</div>';
 		}
 
 		//return by position
@@ -234,7 +248,14 @@ if( ! function_exists( 'wp_ulike_put_comments' ) ){
 		$position = wp_ulike_get_setting( 'wp_ulike_comments', 'auto_display_position');
 
 		//add wp_ulike_comments function
-		$button = wp_ulike_comments('put');
+		//$button = wp_ulike_comments('put');
+
+		$button = '';
+		$button .= '<div class="wpulike-row">';
+		$button .= wp_ulike_comments('put', array('method' => 'dislikeThisComment', 'key' => '_commentdisliked', 'cookie' => 'comment-disliked-', 'wrapper_class' => 'wpulike-dislike wpulike-first'));
+		$button .= wp_ulike_comments('put', array('method' => 'likeThisComment', 'key' => '_commentliked', 'cookie' => 'comment-liked-', 'wrapper_class' => 'wpulike-default wpulike-last'));
+		$button .= '</div>';
+
 
 		//return by position
 		if($position=='bottom')

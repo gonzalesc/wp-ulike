@@ -198,21 +198,34 @@ if ( ! class_exists( 'wp_ulike' ) ) {
 			$output      = '';
 			// method column value
 			$method_val  = $method_col === 'ip' ? $this->user_ip : $this->user_id;
+
 			// Check user log history
 			$user_status = $this->get_user_status( $table, $column, $method_col, $id, $method_val );
 
 			if( $type == 'post' ){
 
 				if( ! $user_status ){
-					$output 	= $this->get_template( $data, 3 );
+					$data['has_vote'] = false;
+
+					if( $method == 'dislikeThis' || $method == 'dislikeThisComment')
+						$output = $this->get_template( $data, 2 );
+					else
+						$output = $this->get_template( $data, 3 );
 
 				} else {
 
-					if( $user_status  == "like" ) {
-						$output = $this->get_template( $data, 2 );
+					$data['has_vote'] = true;
 
-					} else {
+					if( $method == 'dislikeThis' || $method == 'dislikeThisComment' ) {
+						$output = $this->get_template( $data, 2 );
+					} elseif( $method == 'likeThis' || $method == 'likeThisComment' ) {
 						$output = $this->get_template( $data, 3 );
+					} else {
+						if( $user_status == "like" ) {
+							$output = $this->get_template( $data, 2 );
+						} else {
+							$output = $this->get_template( $data, 3 );
+						}
 					}
 
 				}
@@ -220,6 +233,12 @@ if ( ! class_exists( 'wp_ulike' ) ) {
 			} elseif( $type == 'process' ) {
 
 				if( ! $user_status ){
+
+					if( $method == 'dislikeThis' || $method == 'dislikeThisComment' )
+						$this->status = 'unlike';
+					elseif( $method == 'likeThis' || $method == 'likeThisComment' )
+						$this->status = 'like';
+
 					// Increment like counter
 					++$get_like;
 					// Insert log data
@@ -237,14 +256,25 @@ if ( ! class_exists( 'wp_ulike' ) ) {
 
 				} else {
 
-					if( $user_status == "like" ) {
-						// Decrement like counter
-						--$get_like;
+					if( $method == 'dislikeThis' || $method == 'dislikeThisComment' ) {
 						$this->status = 'unlike';
-					} else {
-						// Increment like counter
 						++$get_like;
 					}
+					elseif( $method == 'likeThis' || $method == 'likeThisComment' ) {
+						$this->status = 'like';
+						++$get_like;
+					}
+					else {
+						if( $user_status == "like" ) {
+							// Decrement like counter
+							--$get_like;
+							$this->status = 'unlike';
+						} else {
+							// Increment like counter
+							++$get_like;
+						}
+					}
+
 					// Update status
 					$this->wpdb->update(
 						$this->wpdb->prefix . $table,
@@ -257,6 +287,7 @@ if ( ! class_exists( 'wp_ulike' ) ) {
 
 				// Formatting the output
 				$output = wp_ulike_format_number( $this->update_meta_data( $id, $key, $get_like ) );
+
 				// After process hook
 				do_action_ref_array( 'wp_ulike_after_process',
 					array(
@@ -291,6 +322,11 @@ if ( ! class_exists( 'wp_ulike' ) ) {
 					update_postmeta_cache( array( $id ) );
 					delete_transient( 'wp_ulike_get_most_liked_posts' );
 					break;
+				case '_disliked'		 :
+					update_post_meta( $id, $key, $data );
+					update_postmeta_cache( array( $id ) );
+					delete_transient( 'wp_ulike_get_most_disliked_posts' );
+					break;
 				case '_topicliked'	 :
 					update_post_meta( $id, $key, $data );
 					update_postmeta_cache( array( $id ) );
@@ -300,6 +336,11 @@ if ( ! class_exists( 'wp_ulike' ) ) {
 					update_comment_meta( $id, $key, $data );
 					update_meta_cache( 'comment', array( $id ) );
 					delete_transient( 'wp_ulike_get_most_liked_comments' );
+					break;
+				case '_commentdisliked' :
+					update_comment_meta( $id, $key, $data );
+					update_meta_cache( 'discomment', array( $id ) );
+					delete_transient( 'wp_ulike_get_most_disliked_comments' );
 					break;
 				case '_activityliked':
 					bp_activity_update_meta( $id, $key, $data );
@@ -374,14 +415,15 @@ if ( ! class_exists( 'wp_ulike' ) ) {
 					"button_type"    => $args['button_type'],
 					"button_text"    => $button_text,
 					"general_class"  => $general_class_name,
-					"button_class"   => $button_class_name
+					"button_class"   => $button_class_name,
+					"has_vote"			=> $args['has_vote'],
 				)
 			);
 
 
 			$wp_ulike_callback = call_user_func( 'wp_ulike_generate_templates_list' );
 
-			$output			= '';
+			$output	= '';
 
 			foreach( $wp_ulike_callback as $key => $value ){
 			   if ( $key === $args['style'] ) {
@@ -407,6 +449,8 @@ if ( ! class_exists( 'wp_ulike' ) ) {
 		 * @return			String
 		 */
 		public function get_user_status( $table, $first_column, $second_column, $first_val, $second_val ){
+
+
 
 			// Check the user's likes history
 			$query  = sprintf( "

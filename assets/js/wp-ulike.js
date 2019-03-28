@@ -121,7 +121,8 @@
             'ulike-id'    : 'ID',
             'ulike-nonce' : 'nonce',
             'ulike-type'  : 'type',
-            'ulike-status': 'likeStatus'
+            'ulike-status': 'likeStatus',
+            'ulike-vote'    : 'hasVote'
         };
 
     // The actual plugin constructor
@@ -178,8 +179,20 @@
         _initLike: function( event ){
             // Prevents further propagation of the current event in the capturing and bubbling phases
             event.stopPropagation();
+
+            if( this.settings.hasVote )
+                return false;
+
+
+            var $elementRow = $(event.currentTarget).closest('.wpulike-row');
+
+            if( $elementRow != 'undefined' && $elementRow.length > 0 )
+                $elementRow.find('button').prop( "disabled", true );
+            else
+                $(event.currentTarget).prop( "disabled", true );
+
             // Disable button
-            $(event.currentTarget).prop( "disabled", true );
+            //$(event.currentTarget).prop( "disabled", true );
             // Manipulations
             $document.trigger( 'WordpressUlikeLoading', this.element );
             // Add progress class
@@ -201,7 +214,9 @@
                         this._sendNotification( 'error', response.data );
                     }
                     // Re-enable button
-                    $(event.currentTarget).prop( "disabled", false );
+                    if( $elementRow == 'undefined' || $elementRow.length == 0 )
+                        $(event.currentTarget).prop( "disabled", false );
+                    
                     // Add new trigger when process finished
                     $document.trigger( 'WordpressUlikeUpdated', this.element );
             }.bind(this) );

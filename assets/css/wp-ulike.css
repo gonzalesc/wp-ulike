@@ -109,6 +109,72 @@
   margin: 0;
 }
 
+
+/**
+ * Dislike template
+ */
+.wpulike-row {
+  display: flex;
+}
+
+.wpulike-row .wpulike-first,
+.wpulike-row .wpulike-last {
+  margin: 0 5px;
+}
+
+.wpulike-dislike .wp_ulike_btn {
+  color: #616161;
+  background: #e0e0e0;
+}
+.wpulike-dislike .wp_ulike_is_liked .wp_ulike_btn {
+  color: #757575;
+}
+.wpulike-dislike .wp_ulike_put_image:after {
+  content: '';
+  display: block;
+  background: url(../img/svg/dislike.png) no-repeat;
+  background-size: contain;
+  width: 16px;
+  height: 16px;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translateX(-50%) translateY(-50%);
+}
+.wpulike-dislike .wp_ulike_put_image.image-unlike:after {
+  filter: invert(44%) sepia(40%) saturate(3852%) hue-rotate(329deg) brightness(100%) contrast(111%);
+}
+.wpulike-dislike .count-box {
+  position: relative;
+  border-radius: .25em;
+  font-size: 12px;
+  text-decoration: none;
+  background-color: #FFFFFF;
+  margin-left: 8px;
+  line-height: 28px;
+  display: inline-block;
+  padding: 0 10px;
+  box-shadow: 0 0 0 1px #bdbdbd inset;
+  color: #616161;
+  vertical-align: middle;
+  text-align: center;
+}
+.wpulike-dislike .count-box:before {
+  content: '';
+  position: absolute;
+  border: 1px solid transparent;
+  background: #FFFFFF;
+  border-bottom-color: #bdbdbd;
+  left: -5px;
+  top: 50%;
+  border-left-color: #bdbdbd;
+  transform: rotate(45deg) translatey(-50%);
+  width: 5px;
+  height: 5px;
+  margin: 0;
+}
+
+
 #buddypress #activity-stream .activity-meta .wpulike, #buddypress #activity-stream .activity-comments .wpulike {
   display: inline-block;
   vertical-align: middle;

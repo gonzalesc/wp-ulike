@@ -48,9 +48,11 @@ if( ! function_exists( 'wp_ulike_delete_all_data' ) ){
 		if($get_action == 'wp_ulike_posts_delete_data'){
 			$meta_table = $wpdb->prefix."postmeta";
 			$meta_key   = '_liked';
+			$meta_key_2   = '_disliked';
 		} else if($get_action == 'wp_ulike_comments_delete_data'){
 			$meta_table = $wpdb->prefix."commentmeta";
 			$meta_key   = '_commentliked';
+			$meta_key_2   = '_commentdisliked';
 		} else if($get_action == 'wp_ulike_buddypress_delete_data'){
 			$meta_table = $wpdb->prefix."bp_activity_meta";
 			$meta_key   = '_activityliked';
@@ -60,6 +62,10 @@ if( ! function_exists( 'wp_ulike_delete_all_data' ) ){
 		}
 
 		$do_action 		= $wpdb->delete($meta_table, array( 'meta_key' => $meta_key ));
+
+		if( isset($meta_key_2) ) {
+			$do_action 		= $wpdb->delete($meta_table, array( 'meta_key' => $meta_key_2 ));			
+		}
 
 		if ($do_action === FALSE) {
 			wp_send_json_error( __( 'Failed! An Error Has Occurred While Deleting All ULike Logs/Data', WP_ULIKE_SLUG ));
@@ -743,7 +749,7 @@ if( ! function_exists( 'wp_ulike' ) ){
 		global $post;
 
 		$post_ID       = isset( $args['id'] ) ? $args['id'] : $post->ID;
-		$get_post_meta = get_post_meta( $post_ID, '_liked', true );
+		$get_post_meta = get_post_meta( $post_ID, $args['key'], true );
 		$get_like      = empty( $get_post_meta ) ? 0 : $get_post_meta;
 		$attributes    = apply_filters( 'wp_ulike_posts_add_attr', null );
 		$style         = wp_ulike_get_setting( 'wp_ulike_posts', 'theme', 'wpulike-default' );
@@ -763,7 +769,7 @@ if( ! function_exists( 'wp_ulike' ) ){
 			"slug"          => 'post',					//Slug Name
 			"style"         => $style,					//Get Default Theme
 			"attributes"    => $attributes,				//Get Attributes Filter
-			"wrapper_class" => '',						//Extra Wrapper class
+			"wrapper_class" => 'wpulike-default',		//Extra Wrapper class
 			"button_type"   => $button_type				//Button Type
 		);
 
@@ -926,7 +932,7 @@ if( ! function_exists( 'wp_ulike_comments' ) ){
 	function wp_ulike_comments( $type = 'get', $args = array() ) {
 
 		$comment_ID    = isset( $args['id'] ) ? $args['id'] : get_comment_ID();
-		$comment_meta  = get_comment_meta( $comment_ID, '_commentliked', true );
+		$comment_meta  = get_comment_meta( $comment_ID,  $args['key'], true );
 		$get_like      = empty( $comment_meta ) ? 0 : $comment_meta;
 		$attributes    = apply_filters( 'wp_ulike_comments_add_attr', null );
 		$style         = wp_ulike_get_setting( 'wp_ulike_comments', 'theme', 'wpulike-default' );
@@ -1179,6 +1185,16 @@ if( ! function_exists( 'wp_ulike_get_post_settings_by_type' ) ){
 					'cookie_name'   => 'liked-'
 				);
 				break;
+			case 'dislikeThis':
+				$settings = array(
+					'get_meta_data' => get_post_meta( $post_ID, '_disliked', true ),
+					'setting_key'   => 'wp_ulike_posts',
+					'table_name'    => 'ulike',
+					'column_name'   => 'post_id',
+					'meta_key'      => '_disliked',
+					'cookie_name'   => 'disliked-'
+				);
+				break;
 
 			case 'likeThisComment':
 				$settings = array(
@@ -1188,6 +1204,16 @@ if( ! function_exists( 'wp_ulike_get_post_settings_by_type' ) ){
 					'column_name'   => 'comment_id',
 					'meta_key'      => '_commentliked',
 					'cookie_name'   => 'comment-liked-'
+				);
+				break;
+			case 'dislikeThisComment':
+				$settings = array(
+					'get_meta_data' => get_comment_meta( $post_ID, '_commentdisliked', true ),
+					'setting_key'   => 'wp_ulike_comments',
+					'table_name'    => 'ulike_comments',
+					'column_name'   => 'comment_id',
+					'meta_key'      => '_commentdisliked',
+					'cookie_name'   => 'comment-disliked-'
 				);
 				break;
 
@@ -1266,6 +1292,7 @@ if( ! function_exists( 'wp_ulike_get_likers_template' ) ){
 		$limit_num  = wp_ulike_get_setting( $setting_key, 'number_of_users', 10 );
 		// Get likers list
 		$get_users  = wp_ulike_get_likers_list_per_post( $table_name, $column_name, $post_ID, $limit_num );
+
 		// Bulk user list
 		$users_list = '';
 
@@ -1553,16 +1580,18 @@ if( ! function_exists( 'wp_ulike_set_default_template' ) ){
 		//This function will turn output buffering on
 		ob_start();
 		do_action( 'wp_ulike_before_template' );
+
 		// Extract input array
 		extract( $wp_ulike_template );
 	?>
-		<div class="wpulike wpulike-default <?php echo $wrapper_class; ?>" <?php echo $attributes; ?>>
+		<div class="wpulike <?php echo $wrapper_class; ?>" <?php echo $attributes; ?>>
 			<div class="<?php echo $general_class; ?>">
 				<button type="button"
 					data-ulike-id="<?php echo $ID; ?>"
 					data-ulike-nonce="<?php echo wp_create_nonce( $type . $ID ); ?>"
 					data-ulike-type="<?php echo $type; ?>"
-					data-ulike-status="<?php echo $status; ?>" class="<?php echo $button_class; ?>">
+					data-ulike-status="<?php echo $status; ?>" class="<?php echo $button_class; ?>"
+					data-ulike-vote="<?php echo $has_vote; ?>">
 					<?php
 						if($button_type == 'text'){
 							echo '<span>' . $button_text . '</span>';
@@ -1580,6 +1609,7 @@ if( ! function_exists( 'wp_ulike_set_default_template' ) ){
 		return ob_get_clean(); // data is now in here
 	}
 }
+
 
 	/**
 	 * Create simple heart template
