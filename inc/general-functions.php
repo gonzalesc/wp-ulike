@@ -1591,7 +1591,7 @@ if( ! function_exists( 'wp_ulike_set_default_template' ) ){
 					data-ulike-nonce="<?php echo wp_create_nonce( $type . $ID ); ?>"
 					data-ulike-type="<?php echo $type; ?>"
 					data-ulike-status="<?php echo $status; ?>" class="<?php echo $button_class; ?>"
-					data-ulike-vote="<?php echo $has_vote; ?>">
+					data-ulike-vote="<?php echo apply_filters('ulike/print/attr_vote', $has_vote, $type); ?>">
 					<?php
 						if($button_type == 'text'){
 							echo '<span>' . $button_text . '</span>';
